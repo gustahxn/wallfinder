@@ -39,3 +39,6 @@ chmod +x wallfinder
 
 ## Uso
 Execute `wallfinder` no seu terminal. Use as setas para navegar entre pastas e arquivos. Pressione Enter para aplicar um wallpaper e Ctrl+C para sair.
+
+## AUR Link
+https://aur.archlinux.org/packages/wallfinder-git
