@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
+# wallpaper selector for wayland compositors
+# you need to have fzf, chafa, swaybg, libnotify
 
-# wallfinder - wayland wallpaper selector
-# requirements: fzf, chafa, swaybg, libnotify
-
-# check deps
+# check dependencies
 for cmd in fzf chafa swaybg notify-send; do
     command -v "$cmd" &> /dev/null || { echo "error: $cmd not found."; exit 1; }
 done
 
 while true; do
-    # step 1: folder selection
+    # folder selection
     selection=$( (
         echo "MANUAL: > [ TYPE PATH MANUALLY ]"
         find "$HOME" -maxdepth 4 -not -path '*/.*' -type d 2>/dev/null | awk -v home="$HOME" '
@@ -28,7 +27,7 @@ while true; do
             --header="arrows to browse | enter to select | ctrl-c to exit" \
             --color="prompt:#cccccc,pointer:#cccccc,marker:#cccccc,info:#cccccc,hl:#cccccc,hl+:#cccccc")
 
-    # exit if escape/ctrl-c in step 1
+    # exit when commanded
     [[ $? -ne 0 || -z "$selection" ]] && exit 0
 
     wall_dir=$(echo "$selection" | cut -d":" -f1)
@@ -46,7 +45,7 @@ while true; do
         continue
     fi
 
-    # step 2: wallpaper selection
+    # selecting
     while true; do
         img_selection=$(find "$wall_dir" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" \) | \
             fzf --prompt="step 2: select wallpaper > " \
@@ -60,10 +59,10 @@ while true; do
 
         res=$?
         
-        # go back to step 1
+        # go back
         [[ "$img_selection" == "GO_BACK" ]] && break
         
-        # exit if ctrl-c
+        # exit if commanded
         [[ $res -eq 130 ]] && exit 0
     done
 done
