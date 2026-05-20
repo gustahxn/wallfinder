@@ -1,7 +1,7 @@
 # Wallfinder
 
 <img width="1920" height="1080" alt="19-05-2026_222001" src="https://github.com/user-attachments/assets/c002210d-2d8c-4dc4-b24a-a1ea11e0d381" />
-
+<br>
 A terminal-based wallpaper selector for Wayland compositors.
 
 ## Easiest way to download and use - AUR download https://aur.archlinux.org/packages/wallfinder-git
