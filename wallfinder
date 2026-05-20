@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+# wallfinder - wayland wallpaper selector
+# requirements: fzf, chafa, swaybg, libnotify
+
+# check deps
+for cmd in fzf chafa swaybg notify-send; do
+    command -v "$cmd" &> /dev/null || { echo "error: $cmd not found."; exit 1; }
+done
+
+while true; do
+    # step 1: folder selection
+    selection=$( (
+        echo "MANUAL: > [ TYPE PATH MANUALLY ]"
+        find "$HOME" -maxdepth 4 -not -path '*/.*' -type d 2>/dev/null | awk -v home="$HOME" '
+            $0 == home { next }
+            {
+                rel = $0; sub(home"/", "", rel);
+                depth = gsub(/\//, "/", rel);
+                indent = ""; for (i=0; i<depth; i++) indent = indent "    ";
+                split($0, p, "/");
+                print $0 ":" indent " " p[length(p)] "  (" rel ")"
+            }
+        '
+    ) | fzf --ansi -d ":" --with-nth 2 \
+            --prompt="step 1: select folder > " \
+            --layout=reverse --border \
+            --header="arrows to browse | enter to select | ctrl-c to exit" \
+            --color="prompt:#cccccc,pointer:#cccccc,marker:#cccccc,info:#cccccc,hl:#cccccc,hl+:#cccccc")
+
+    # exit if escape/ctrl-c in step 1
+    [[ $? -ne 0 || -z "$selection" ]] && exit 0
+
+    wall_dir=$(echo "$selection" | cut -d":" -f1)
+
+    # manual path
+    if [[ "$wall_dir" == "MANUAL" ]]; then
+        echo ""
+        read -p "enter the full path to your wallpapers: " wall_dir
+        wall_dir="${wall_dir/#\~/$HOME}"
+    fi
+
+    if [[ ! -d "$wall_dir" ]]; then
+        echo "error: directory $wall_dir not found."
+        sleep 1
+        continue
+    fi
+
+    # step 2: wallpaper selection
+    while true; do
+        img_selection=$(find "$wall_dir" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" \) | \
+            fzf --prompt="step 2: select wallpaper > " \
+                --layout=reverse --border \
+                --color="prompt:#cccccc,pointer:#cccccc,marker:#cccccc,info:#cccccc,hl:#cccccc,hl+:#cccccc" \
+                --preview="chafa --format=kitty --size \${FZF_PREVIEW_COLUMNS}x\${FZF_PREVIEW_LINES} {}" \
+                --preview-window=right:50%:wrap \
+                --header="enter to apply | bspace/esc to go back | ctrl-c to exit" \
+                --bind "enter:execute-silent(killall swaybg 2>/dev/null; swaybg -m fill -i {} & ln -sf {} \"$wall_dir/atual.png\"; notify-send \"wallpaper applied\" \"\$(basename {})\")" \
+                --bind "bspace:become(echo GO_BACK)" --bind "esc:become(echo GO_BACK)")
+
+        res=$?
+        
+        # go back to step 1
+        [[ "$img_selection" == "GO_BACK" ]] && break
+        
+        # exit if ctrl-c
+        [[ $res -eq 130 ]] && exit 0
+    done
+done
