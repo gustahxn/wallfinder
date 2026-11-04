@@ -21,6 +21,15 @@ Move the `wallfinder` script to `~/.local/bin/` and ensure it has execution perm
 chmod +x wallfinder
 ```
 
+## Preview protocols
+The preview chooses the best image protocol for the terminal automatically:
+- kitty graphics: kitty, WezTerm, Ghostty
+- sixel: foot and other sixel terminals
+- ASCII fallback: anything else
+
+To force one, set `WALLFINDER_FORMAT` to `kitty`, `sixels`, `iterm` or `symbols`.
+Inside tmux it works the same way, as long as `allow-passthrough on` is set.
+
 ## Usage
 Run `wallfinder` from your terminal. Use the arrow keys to navigate folders and files. Press Enter to apply a wallpaper and Ctrl+C to exit.
 
@@ -46,6 +55,15 @@ Mova o script `wallfinder` para `~/.local/bin/` e garanta que ele tenha permiss√
 ```bash
 chmod +x wallfinder
 ```
+
+## Protocolos de preview
+O preview escolhe sozinho o melhor protocolo de imagem do terminal:
+- kitty graphics: kitty, WezTerm, Ghostty
+- sixel: foot e outros terminais com sixel
+- fallback ASCII: qualquer outro
+
+Para for√ßar um deles, defina `WALLFINDER_FORMAT` como `kitty`, `sixels`, `iterm` ou `symbols`.
+Dentro do tmux funciona igual, desde que `allow-passthrough on` esteja ativo.
 
 ## Uso
 Execute `wallfinder` no seu terminal. Use as setas para navegar entre pastas e arquivos. Pressione Enter para aplicar um wallpaper e Ctrl+C para sair.

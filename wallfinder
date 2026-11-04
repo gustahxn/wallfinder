@@ -7,6 +7,49 @@ for cmd in fzf chafa swaybg notify-send; do
     command -v "$cmd" &> /dev/null || { echo "error: $cmd not found."; exit 1; }
 done
 
+# escolhe o protocolo de imagem do terminal (kitty, sixel ou fallback ascii)
+# da pra forcar com: WALLFINDER_FORMAT=kitty|sixels|iterm|symbols
+if [[ -n $WALLFINDER_FORMAT ]]; then
+    format="$WALLFINDER_FORMAT"
+else
+    # dentro do tmux o TERM e do tmux; pergunta pro tmux qual e o terminal de fora
+    outer_term="$TERM"
+    if [[ -n $TMUX ]]; then
+        outer_term=$(tmux display-message -p '#{client_termname}' 2>/dev/null || echo "$TERM")
+    fi
+
+    case "$outer_term" in
+        foot*) format=sixels ;;
+        xterm-kitty*|xterm-ghostty*|wezterm*) format=kitty ;;
+        *)
+            # fora do tmux, essas variaveis identificam o terminal
+            if [[ -n $KITTY_WINDOW_ID || $TERM_PROGRAM == WezTerm || $TERM_PROGRAM == ghostty ]]; then
+                format=kitty
+            else
+                format=symbols
+            fi
+            ;;
+    esac
+fi
+
+# o chafa so liga o passthrough sozinho quando e kitty; nos outros casos
+# precisa ser dito explicitamente qual multiplexador esta no meio
+if [[ -n $TMUX ]]; then
+    passthrough=tmux
+elif [[ -n $STY ]]; then
+    passthrough=screen
+else
+    passthrough=none
+fi
+
+# limpa a area do preview antes de desenhar, senao a imagem antiga fica
+# sobrando quando a janela diminui (usa as posicoes que o fzf exporta)
+clear_area='[ -n "$FZF_PREVIEW_TOP" ] && printf "\033[%s;%sH\033[J" "$((FZF_PREVIEW_TOP + 1))" "$((FZF_PREVIEW_LEFT + 1))"'
+
+# o tamanho fica em variavel pra ser calculado de novo a cada preview
+# (assim a imagem se ajusta quando a janela muda de tamanho)
+preview="$clear_area; chafa --format=$format --passthrough=$passthrough --size \${FZF_PREVIEW_COLUMNS}x\$((FZF_PREVIEW_LINES - 1)) --margin-bottom=1 {}"
+
 while true; do
     # folder selection
     selection=$( (
@@ -51,8 +94,9 @@ while true; do
             fzf --prompt="step 2: select wallpaper > " \
                 --layout=reverse --border \
                 --color="prompt:#cccccc,pointer:#cccccc,marker:#cccccc,info:#cccccc,hl:#cccccc,hl+:#cccccc" \
-                --preview="chafa --format=kitty --size \${FZF_PREVIEW_COLUMNS}x\${FZF_PREVIEW_LINES} {}" \
+                --preview="$preview" \
                 --preview-window=right:50%:wrap \
+                --bind 'resize:refresh-preview' \
                 --header="enter to apply | bspace/esc to go back | ctrl-c to exit" \
                 --bind "enter:execute-silent(killall swaybg 2>/dev/null; swaybg -m fill -i {} & ln -sf {} \"$wall_dir/atual.png\"; notify-send \"wallpaper applied\" \"\$(basename {})\")" \
                 --bind "bspace:become(echo GO_BACK)" --bind "esc:become(echo GO_BACK)")
