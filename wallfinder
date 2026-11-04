@@ -37,16 +37,20 @@ fi
 # excecao: tmux novo com suporte a sixel entende sixel sozinho, e ai o
 # passthrough atrapalha.
 if [[ -n $TMUX ]]; then
-    # pergunta pro tmux quais recursos o terminal de fora tem; o formato
-    # sixel_support so diz se o tmux foi compilado com sixel, nao serve aqui
-    tmux_features=$(tmux display-message -p '#{client_termfeatures}' 2>/dev/null)
-    if [[ $format == sixels && $tmux_features == *sixel* ]]; then
-        passthrough=none
-        # o tmux so aceita sixel em DCS sem parametros (ESC P q), mas o chafa
-        # manda ESC P 0;1;0 q, entao tira os parametros
-        sixel_filter=" | sed 's/\\x1bP[0-9;]*q/\\x1bPq/'"
-    else
-        passthrough=tmux
+    # o passthrough direto nao funciona pelo fzf (o tmux repassa a imagem na
+    # hora errada, ai o fzf pinta por cima). entao o caminho e o sixel nativo
+    # do tmux, com um redraw no fim pra imagem nao ficar escondida.
+    passthrough=none
+    # o tmux so aceita sixel em DCS sem parametros (ESC P q), mas o chafa
+    # manda ESC P 0;1;0 q, entao tira os parametros
+    sixel_filter=" | sed 's/\\x1bP[0-9;]*q/\\x1bPq/'"
+    # a imagem so aparece no proximo redraw; pede um sem esperar troca de
+    # janela. o arquivo de token evita disparar varios redraws quando voce
+    # passa rapido por varias imagens
+    tmux_client=$(tmux display-message -p -t "$TMUX_PANE" '#{client_name}' 2>/dev/null)
+    if [[ -n $tmux_client ]]; then
+        token_file="/tmp/wallfinder-${TMUX_PANE#%}-refresh"
+        preview_refresh="; t=\$(date +%s%N); echo \$t > '$token_file'; (sleep 0.08; [ \"\$(cat '$token_file' 2>/dev/null)\" = \"\$t\" ] && tmux refresh-client -t '$tmux_client') >/dev/null 2>&1 &"
     fi
 elif [[ -n $STY ]]; then
     passthrough=screen
@@ -60,7 +64,7 @@ clear_area='[ -n "$FZF_PREVIEW_TOP" ] && printf "\033[%s;%sH\033[J" "$((FZF_PREV
 
 # o tamanho fica em variavel pra ser calculado de novo a cada preview
 # (assim a imagem se ajusta quando a janela muda de tamanho)
-preview="$clear_area; chafa --format=$format --passthrough=$passthrough --size \${FZF_PREVIEW_COLUMNS}x\$((FZF_PREVIEW_LINES - 1)) --margin-bottom=1 {}$sixel_filter"
+preview="$clear_area; chafa --format=$format --passthrough=$passthrough --size \${FZF_PREVIEW_COLUMNS}x\$((FZF_PREVIEW_LINES - 1)) --margin-bottom=1 {}$sixel_filter$preview_refresh"
 
 while true; do
     # folder selection
