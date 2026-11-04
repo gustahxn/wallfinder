@@ -28,7 +28,11 @@ The preview chooses the best image protocol for the terminal automatically:
 - ASCII fallback: anything else
 
 To force one, set `WALLFINDER_FORMAT` to `kitty`, `sixels`, `iterm` or `symbols`.
-Inside tmux it works the same way, as long as `allow-passthrough on` is set.
+Using tmux it works the same way: recent tmux versions forward SIXEL natively, and kitty graphics go through passthrough (`allow-passthrough on`).
+Some terminals (foot, for example) support SIXEL but do not declare it in terminfo, so tell tmux about it:
+```tmux
+set -as terminal-features ',foot*:sixel'
+```
 
 ## Usage
 Run `wallfinder` from your terminal. Use the arrow keys to navigate folders and files. Press Enter to apply a wallpaper and Ctrl+C to exit.
@@ -63,7 +67,11 @@ O preview escolhe sozinho o melhor protocolo de imagem do terminal:
 - fallback ASCII: qualquer outro
 
 Para forçar um deles, defina `WALLFINDER_FORMAT` como `kitty`, `sixels`, `iterm` ou `symbols`.
-Dentro do tmux funciona igual, desde que `allow-passthrough on` esteja ativo.
+Usando o tmux funciona igual: versões recentes repassam SIXEL sozinhas, e o protocolo do kitty vai por passthrough (`allow-passthrough on`).
+Alguns terminais (o foot, por exemplo) suportam SIXEL mas não declaram isso no terminfo, então avise o tmux:
+```tmux
+set -as terminal-features ',foot*:sixel'
+```
 
 ## Uso
 Execute `wallfinder` no seu terminal. Use as setas para navegar entre pastas e arquivos. Pressione Enter para aplicar um wallpaper e Ctrl+C para sair.
