@@ -15,6 +15,8 @@ The following dependencies must be installed:
 - swaybg
 - libnotify
 
+Optional: ImageMagick (`magick`). When present, the preview is center-cropped to fill the area, which avoids the black bar under the image.
+
 ## Installation
 Move the `wallfinder` script to `~/.local/bin/` and ensure it has execution permissions:
 ```bash
@@ -53,6 +55,8 @@ As seguintes dependências devem estar instaladas:
 - chafa
 - swaybg
 - libnotify
+
+Opcional: ImageMagick (`magick`). Se estiver instalado, o preview é recortado no centro pra preencher a área, o que evita a barra preta embaixo da imagem.
 
 ## Instalação
 Mova o script `wallfinder` para `~/.local/bin/` e garanta que ele tenha permissões de execução:

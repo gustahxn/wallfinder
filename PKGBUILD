@@ -7,6 +7,7 @@ arch=('any')
 url="https://github.com/gustahxn/wallfinder"
 license=('MIT')
 depends=('fzf' 'chafa' 'swaybg' 'libnotify')
+optdepends=('imagemagick: recorta o preview no centro pra nao sobrar barra preta embaixo da imagem')
 makedepends=('git')
 provides=('wallfinder')
 conflicts=('wallfinder')

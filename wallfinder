@@ -62,9 +62,45 @@ fi
 # sobrando quando a janela diminui (usa as posicoes que o fzf exporta)
 clear_area='[ -n "$FZF_PREVIEW_TOP" ] && printf "\033[%s;%sH\033[J" "$((FZF_PREVIEW_TOP + 1))" "$((FZF_PREVIEW_LEFT + 1))"'
 
-# o tamanho fica em variavel pra ser calculado de novo a cada preview
-# (assim a imagem se ajusta quando a janela muda de tamanho)
-preview="$clear_area; chafa --format=$format --passthrough=$passthrough --size \${FZF_PREVIEW_COLUMNS}x\$((FZF_PREVIEW_LINES - 1)) --margin-bottom=1 {}$sixel_filter$preview_refresh"
+# o chafa sempre arredonda a imagem pra linhas inteiras de celula e pinta a
+# sobra de preto (aquela barra embaixo). se o imagemagick estiver instalado,
+# recorta a imagem no centro pra ela preencher a area sem barra e sem esticar.
+magick_bin=$(command -v magick || command -v convert)
+preview_helper=""
+if [[ $format == sixels && -n $magick_bin ]]; then
+    preview_helper=$(mktemp "${TMPDIR:-/tmp}/wallfinder-prev.XXXXXX")
+    trap 'rm -f "$preview_helper"' EXIT
+    cat > "$preview_helper" <<HELPER
+#!/bin/sh
+# recorta no centro pra caber exatamente na proporcao que o chafa usa
+w=\${FZF_PREVIEW_COLUMNS:-80}
+h=\$(( \${FZF_PREVIEW_LINES:-24} - 1 ))
+[ "\$h" -lt 1 ] && h=1
+hdr=\$(chafa --format=sixels --size "\${w}x\${h}" "\$1" 2>/dev/null | head -c 200 | tr -d '\033')
+pix=\$(printf '%s' "\$hdr" | grep -aoE '"1;1;[0-9]+;[0-9]+' | head -1)
+pw=\$(printf '%s' "\$pix" | cut -d';' -f3)
+ph=\$(printf '%s' "\$pix" | cut -d';' -f4)
+tmp=\$(mktemp "\${TMPDIR:-/tmp}/wallfinder-img.XXXXXX")
+if [ -n "\$pw" ] && [ -n "\$ph" ]; then
+    $magick_bin "\$1" -resize "\${pw}x\${ph}^" -gravity center -extent "\${pw}x\${ph}" png:- > "\$tmp" 2>/dev/null
+fi
+if [ -s "\$tmp" ]; then
+    chafa --format=sixels --passthrough=$passthrough --size "\${w}x\${h}" - < "\$tmp" 2>/dev/null$sixel_filter
+else
+    chafa --format=sixels --passthrough=$passthrough --size "\${w}x\${h}" --margin-bottom=1 "\$1" 2>/dev/null$sixel_filter
+fi
+rm -f "\$tmp"
+HELPER
+    chmod +x "$preview_helper"
+fi
+
+if [[ -n $preview_helper ]]; then
+    preview="$clear_area; '$preview_helper' {}$preview_refresh"
+else
+    # o tamanho fica em variavel pra ser calculado de novo a cada preview
+    # (assim a imagem se ajusta quando a janela muda de tamanho)
+    preview="$clear_area; chafa --format=$format --passthrough=$passthrough --size \${FZF_PREVIEW_COLUMNS}x\$((FZF_PREVIEW_LINES - 1)) --margin-bottom=1 {}$sixel_filter$preview_refresh"
+fi
 
 while true; do
     # folder selection
